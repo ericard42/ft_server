@@ -28,6 +28,7 @@ RUN openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -subj '/C=FR/ST=
 #NGINX
 RUN rm /etc/nginx/sites-available/default
 COPY srcs/default /etc/nginx/sites-available
+RUN nginx -t
 #RUN chown -R www-data /var/www/*
 #RUN ln -s /etc/nginx/sites-available/localhost /etc/nginx/sites-enabled/
 
@@ -52,5 +53,5 @@ RUN chmod 777 /var/www/html/wordpress/info.php
 
 EXPOSE 80 443
 
-CMD service mysql start && service nginx start && service php7.3-fpm start
+CMD service mysql start && service nginx start && service php7.3-fpm start && sleep infinity
 #Executer une commande au lancement du container
