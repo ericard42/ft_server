@@ -1,8 +1,10 @@
-FROM debian:buster-slim
 #Definir Debian Buster comme image de base
+FROM debian:buster-slim
 
+#Installer tous les paquets qu'il faut
 RUN apt-get -y update && apt-get -y install mariadb-server \
 											wget \
+											unzip \
 											php \
 											php-cli \
 											php-cgi \
@@ -11,14 +13,10 @@ RUN apt-get -y update && apt-get -y install mariadb-server \
 											php-mysql \
 											nginx \
 											libnss3-tools
-#Installer tous les paquets qu'il faut
 
+#Copier les fichiers de configuration
 COPY srcs/wordpress /etc/nginx/sites-available
 COPY srcs/phpmyadmin /etc/nginx/sites-available
-#Copier tout le contenu de srcs dans le dossier root du container
-
-WORKDIR /root/
-#Spécifier dans quel dossier se placer au lancement du container
 
 #CERTIFICAT SSL
 RUN mkdir /etc/nginx/ssl
@@ -29,29 +27,33 @@ RUN openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -subj '/C=FR/ST=
 RUN rm /etc/nginx/sites-available/default
 COPY srcs/default /etc/nginx/sites-available
 RUN nginx -t
-#RUN chown -R www-data /var/www/*
-#RUN ln -s /etc/nginx/sites-available/localhost /etc/nginx/sites-enabled/
 
 #MYSQL
 COPY srcs/init.sql /root/
-RUN service mysql start && mysql -uroot -proot mysql < "./init.sql"
+RUN service mysql start && mysql -uroot -proot mysql < "./root/init.sql"
 
 #PHPMYADMIN
-COPY srcs/test.html /var/www/html/
-RUN chown -R www-data:www-data /var/www/html
+RUN rm /etc/php/7.3/fpm/php.ini
+COPY srcs/php.ini /etc/php/7.3/fpm/php.ini
+RUN wget https://files.phpmyadmin.net/phpMyAdmin/4.9.0.1/phpMyAdmin-4.9.0.1-all-languages.zip
+RUN unzip phpMyAdmin-4.9.0.1-all-languages.zip
+RUN mv phpMyAdmin-4.9.0.1-all-languages phpmyadmin
+RUN mv phpmyadmin /var/www/html
+RUN rm phpMyAdmin-4.9.0.1-all-languages.zip
+RUN chmod -R 755 /var/www/html/phpmyadmin/
 
 #WORDPRESS
 RUN wget http://fr.wordpress.org/latest-fr_FR.tar.gz
 RUN tar -xzvf latest-fr_FR.tar.gz && rm latest-fr_FR.tar.gz
 RUN mv wordpress /var/www/html
-
 RUN chmod -R 755 /var/www/html/wordpress/
+COPY srcs/wp-config.php /var/www/html/wordpress
 
-COPY srcs/info.php /var/www/html/wordpress
-RUN chmod 777 /var/www/html/wordpress/info.php
-#RUN chmod -R 755 /var/www/html/phpmyadmin/
+#Avoir l'index
+RUN rm /var/www/html/index.nginx-debian.html
 
+#Ouvrir les ports
 EXPOSE 80 443
 
+#Lancer les services
 CMD service mysql start && service nginx start && service php7.3-fpm start && sleep infinity
-#Executer une commande au lancement du container
