@@ -1,3 +1,8 @@
+#Build le Docker (Ajouter sudo au début sur la VM):
+#docker build -t 'name' .
+#Lancer le Docker (Ajouter sudo au début sur la VM):
+#docker run -it -p 80:80 -p 443:443 'name'
+
 #Definir Debian Buster comme image de base
 FROM debian:buster-slim
 
